@@ -25,6 +25,11 @@ class StubLLMClient:
         raise AssertionError("LLM should not be called when EvidenceBundle is empty")
 
 
+class _FakeSession:
+    def query(self, *_args, **_kwargs):  # pragma: no cover - deterministic test stub
+        raise AssertionError("Query should not be invoked in this unit test")
+
+
 def test_leo_report_no_fabrication(monkeypatch: pytest.MonkeyPatch) -> None:
     """Empty bundles must bypass the LLM and emit deterministic sanitized text."""
 
@@ -33,7 +38,7 @@ def test_leo_report_no_fabrication(monkeypatch: pytest.MonkeyPatch) -> None:
     llm_client = StubLLMClient()
 
     service = TemplateReportService(
-        db=None,
+        db=_FakeSession(),
         template_service=template_service,
         context_service=context_service,
         llm_client=llm_client,
@@ -63,7 +68,7 @@ def test_full_intrep_response_shape(monkeypatch: pytest.MonkeyPatch) -> None:
     llm_client = StubLLMClient()
 
     service = TemplateReportService(
-        db=None,
+        db=_FakeSession(),
         template_service=template_service,
         context_service=context_service,
         llm_client=llm_client,
@@ -74,6 +79,7 @@ def test_full_intrep_response_shape(monkeypatch: pytest.MonkeyPatch) -> None:
     mission.mission_authority = "TITLE_10_MIL"
 
     monkeypatch.setattr(service, "_get_mission", lambda mission_id: mission)
+    monkeypatch.setattr(service, "_get_evidence_bundle", lambda mission_id: EvidenceBundle(mission_id=str(mission.id)))
     monkeypatch.setattr(service, "_invoke_markdown_llm", lambda *args, **kwargs: "# Test\nBody")
     monkeypatch.setattr(service, "_render_markdown", lambda markdown: "<p>Body</p>")
 
