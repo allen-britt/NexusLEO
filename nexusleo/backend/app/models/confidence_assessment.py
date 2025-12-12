@@ -30,5 +30,5 @@ class ConfidenceAssessment(Base):
     )
     level = Column(Enum(ConfidenceLevel, name="confidence_level"), nullable=False)
     rubric_version = Column(String, nullable=False)
-    factors_json = Column(JSONB, nullable=False, server_default="{}")
+    factors_json = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     rationale_text = Column(Text, nullable=False)
