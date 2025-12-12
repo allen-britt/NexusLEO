@@ -1,0 +1,26 @@
+[project]
+name = "nexusleo-backend"
+version = "0.1.0"
+description = "NexusLEO backend service"
+authors = [{ name = "NexusLEO" }]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy>=2",
+    "psycopg[binary]",
+    "alembic",
+    "pydantic>=2",
+    "pydantic-settings",
+    "python-dotenv",
+    "pytest",
+    "httpx",
+    "pytest-asyncio",
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "mypy"]
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
