@@ -1,0 +1,2 @@
+ALPHA: I met with John Smith in Baltimore.
+BRAVO: I met with John Smith in Baltimore.

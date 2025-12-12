@@ -1,0 +1,3 @@
+ALPHA: I met with Jane Doe in Baltimore on 2025-01-02.
+BRAVO: I did not meet with Jane Doe in Baltimore on 2025-01-02.
+CHARLIE: I met with Jane Doe in Baltimore on 2025-01-02.
