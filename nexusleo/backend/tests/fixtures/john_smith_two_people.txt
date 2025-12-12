@@ -1,0 +1,4 @@
+ALPHA: I met with John Smith in Baltimore.
+BRAVO: I met with John Smith in Annapolis.
+ALPHA: The John Smith I met works at Harbor Bank.
+BRAVO: The John Smith I met works at City Transit.
