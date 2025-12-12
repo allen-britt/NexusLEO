@@ -1,4 +1,4 @@
-# NexusLEO Doctrine → Code Mapping v0.1
+# NexusLEO Doctrine → Code Mapping (v0.1)
 
 **Document Type:** Doctrine-to-Implementation Mapping  
 **System:** NexusLEO  
@@ -6,104 +6,134 @@
 **Status:** Frozen  
 **Last Updated:** 2025-09-12  
 
-> ⚠️ This document binds doctrine to implementation.  
-> If code behavior conflicts with this mapping, the mapping prevails.
+> ⚠️ This document is authoritative.  
+> If implementation behavior conflicts with this mapping, **the mapping prevails**.  
+> Any behavior not explicitly mapped **does not exist** in NexusLEO.
 
 ---
 
 ## 1. Purpose
 
-This document maps **NexusLEO Platform Doctrine v0.1** to concrete backend artifacts.  
-Any behavior not explicitly mapped here **does not exist** in the system.
+This document binds NexusLEO **Platform Doctrine v0.1** and all v0.1 appendices to concrete backend responsibilities.
+
+It exists to:
+- prevent doctrinal drift
+- enforce non-decisional behavior
+- ensure prosecutorial and judicial survivability
+- constrain future development
 
 ---
 
 ## 2. Doctrine §§1–2: Purpose, Scope, Non-Goals
 
 ### Doctrine Requirements
-- Assistive, not decision-making
+- Analytical assistance only
+- No decision-making
 - No enforcement recommendations
-- No intelligence analysis framing
+- No intelligence-community framing
+- No suspect ranking, scoring, or prediction
 
 ### Code Enforcement
-- No endpoints return actions, recommendations, or suspect rankings
-- Absence of decision logic in:
-  - `backend/app/services/*`
-  - `backend/app/api/routes/*`
+- No API response may include:
+  - recommendations
+  - next steps
+  - risk scores
+  - suspect prioritization
+  - probability of guilt
+- No services may implement decision logic
+
+**Enforced in:**
+- `backend/app/api/routes/*`
+- `backend/app/services/*`
+
+Absence of such logic is a hard constraint.
 
 ---
 
-## 3. Doctrine §3: Human Authority and Responsibility
+## 3. Doctrine §3: Human Authority & Responsibility
 
 ### Doctrine Requirements
-- Humans own decisions and input validity
-- System records attribution
+- Humans own data validity
+- Humans own decisions
+- System records attribution, not judgment
 
 ### Code Alignment
 - `SourceDocument`
-  - `sha256`
   - `raw_text`
+  - `sha256`
   - `metadata_json`
 - `AuditEvent`
   - `actor`
   - `action`
   - `created_at`
 
-All ingest and analytic steps are logged with authenticated context.
+Every ingest, extraction, assessment, and governance action is attributed and logged.
 
 ---
 
 ## 4. Doctrine §4: Evidence Handling & Chain of Custody
 
 ### Doctrine Requirements
-- Immutable sources
+- Immutable source material
 - Hashing at ingest
-- Full provenance
+- Full provenance from claim → source
 
 ### Code Alignment
 - `SourceDocument.sha256`
-- `EvidenceLink.mention_id`
 - `Mention.document_id`
+- `EvidenceLink.mention_id`
 - `Claim.case_id`
 
-Chain: **Claim → EvidenceLink → Mention → SourceDocument**
+Canonical chain:
+
+**Claim → EvidenceLink → Mention → SourceDocument**
+
+No mutation of ingested source text is permitted.
 
 ---
 
-## 5. Doctrine §5: Claims-First Model
+## 5. Doctrine §5: Claims-First Analytical Model
 
 ### Doctrine Requirements
 - No claims without evidence
+- Claims are atomic analytical assertions
 
 ### Code Alignment
 - `Claim`
 - `EvidenceLink`
 
-Claims cannot exist without at least one evidence link.
+**Hard rule:**  
+A `Claim` must have ≥1 `EvidenceLink`.  
+Claims cannot exist independently.
 
 ---
 
-## 6. Doctrine §6: Entity Representation
+## 6. Doctrine §6: Entity Representation & Resolution
 
 ### Doctrine Requirements
 - Conservative resolution
 - Ambiguity preserved
+- No silent merges
 
 ### Code Alignment
 - `Entity`
 - `ResolutionHypothesis`
   - `status = UNREVIEWED | ACCEPTED | REJECTED`
+  - `score`
+  - `features_json`
 
-No fuzzy matching or silent merges.
+Multiple candidate entities may coexist.  
+Resolution is explicit and reviewable.
 
 ---
 
-## 7. Doctrine §7: Confidence Standard
+## 7. Doctrine §7 + Confidence Rubric Appendix v0.1
 
 ### Doctrine Requirements
-- Evidence quality, not probability
+- Confidence reflects evidentiary support, not probability
 - Deterministic rubric
-- Color semantics
+- Transparent rationale
+- Visual semantics allowed (non-functional)
 
 ### Code Alignment
 - `ConfidenceAssessment`
@@ -112,11 +142,18 @@ No fuzzy matching or silent merges.
   - `factors_json`
   - `rationale_text`
 
-Color mapping applied at UI layer:
+### Enforcement Rules
+- Confidence cannot be manually edited
+- Confidence recalculation only via rubric logic
+- No probabilistic scoring
+
+### UI Semantics (Presentation Only)
 - HIGH → Green
 - MODERATE → Yellow
 - LOW → Red
 - UNDETERMINED → Grey
+
+Color has **no analytical meaning**.
 
 ---
 
@@ -124,47 +161,129 @@ Color mapping applied at UI layer:
 
 ### Doctrine Requirements
 - No asserted facts
+- No stochastic inference
 - Reproducible outputs
 
 ### Code Alignment
-- Deterministic rule-based extraction
-- No stochastic processes
-- Versioned tool identifiers in `AuditEvent`
+- Deterministic extraction rules only
+- No ML / LLM inference in v0.1
+- Tool + version identifiers recorded in `AuditEvent`
+
+Given identical inputs and versions, outputs must be identical.
 
 ---
 
 ## 9. Doctrine §9: Auditability
 
 ### Doctrine Requirements
-- Every analytic step logged
+- Every analytical step logged
+- Audit trail is immutable and discoverable
 
 ### Code Alignment
-- `AuditEvent` records:
-  - ingest_started
-  - extraction_completed
-  - confidence_assessed
-  - ingest_completed
+- `AuditEvent` with actions:
+  - `ingest_started`
+  - `extraction_completed`
+  - `confidence_assessed`
+  - `ingest_completed`
+  - `governance_action` (Tier 2)
+  - `export_certified`
 
-Audit events are queryable and exportable.
+Audit records:
+- cannot be edited
+- cannot be deleted
+- are exportable
 
 ---
 
-## 10. Doctrine §§10–12: Discovery, Governance, Visibility
+## 10. Supervisor Review Mode v0.1 → Code Mapping
 
-### Code Alignment
-- Full export via API
-- Versioned methods and rubrics
-- Doctrine intended to be embedded in operator interface
+### Authority Tiers
+- Tier 1: Soft Governance (single reviewer)
+- Tier 2: Hard Governance (dual-control)
+
+### Code Responsibilities
+- Tier 1:
+  - annotations
+  - flags
+  - review markers
+- Tier 2:
+  - snapshot locking
+  - export certification
+
+### Dual-Control Enforcement
+- Two distinct authenticated users
+- Symmetric approval (order independent)
+- Time-bounded concurrence window
+- Separate audit entries per approver
+
+No Tier 2 action completes with a single actor.
 
 ---
 
-## 11. Enforcement Rule
+## 11. Discovery & Export Doctrine v0.1 → Code Mapping
 
-Any future feature or PR must:
+### Export Classes
+- **Class A:** Source Export
+- **Class B:** Analytical Export
+- **Class C:** Certified Snapshot Export
+
+### Export Manifest (Required)
+Each export must generate a manifest containing:
+- export_id
+- case_id
+- export_class
+- timestamp
+- tool + version identifiers
+- included object IDs
+- audit event IDs
+- approver identities (Class C only)
+
+### Enforcement
+- Class C exports require:
+  - locked snapshot
+  - symmetric dual-control
+- Historical exports are immutable
+- New versions generate new exports
+
+---
+
+## 12. Visibility & Operator Awareness
+
+### Doctrine Requirements
+- No hidden analysis
+- Operators understand process
+
+### Code Alignment
+- Doctrine and rubric intended to be embedded in UI
+- Audit events queryable by operators
+- Confidence rationale always visible
+
+---
+
+## 13. Explicit Non-Existence Rules
+
+The following **must not exist** in NexusLEO v0.1:
+
+- suspect rankings
+- risk or threat scores
+- predictive analytics
+- enforcement recommendations
+- probable cause indicators
+- guilt or intent assertions
+
+Any PR introducing these violates doctrine.
+
+---
+
+## 14. Enforcement Rule (Binding)
+
+Any future feature, PR, or refactor must:
 
 1. Cite the doctrine section it satisfies
 2. Update this mapping if behavior changes
 3. Bump doctrine version if intent changes
+
+Unmapped behavior is invalid by definition.
 
 ---
 
