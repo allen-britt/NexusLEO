@@ -5,7 +5,7 @@ import enum
 
 from sqlalchemy import Column, Enum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 
 from .base import Base
 
