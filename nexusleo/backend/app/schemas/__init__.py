@@ -14,6 +14,7 @@ from .activity import ActivityLogCreate, ActivityLogOut
 from .shift_note import ShiftLogNoteCreate, ShiftLogNoteOut
 from .attach_activity import AttachActivityRequest, AttachActivityResponse
 from .case_timeline import CaseTimelineItem
+from .guidance import CaseGuidanceResponse, GuidanceItem
 
 __all__ = [
     "CaseCreate",
@@ -43,4 +44,6 @@ __all__ = [
     "AttachActivityRequest",
     "AttachActivityResponse",
     "CaseTimelineItem",
+    "GuidanceItem",
+    "CaseGuidanceResponse",
 ]

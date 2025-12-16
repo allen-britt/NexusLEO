@@ -27,6 +27,8 @@ from app.schemas.bundles import (
     RunCaseRequest,
     RunCaseResponse,
 )
+from app.schemas.guidance import CaseGuidanceResponse
+from app.services.guidance import build_case_guidance
 from app.services.ingest import ingest_document
 
 router = APIRouter()
@@ -347,6 +349,17 @@ def case_timeline(
     items.sort(key=lambda row: (row[0], row[1], row[2]))
     sliced = items[offset : offset + limit]
     return [row[3] for row in sliced]
+
+
+@router.get("/cases/{case_id}/guidance", response_model=CaseGuidanceResponse)
+def case_guidance(
+    case_id: UUID,
+    db: Session = Depends(get_db),
+) -> CaseGuidanceResponse:
+    try:
+        return build_case_guidance(db=db, case_id=case_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
 
 
 @router.post("/cases/{case_id}/run", response_model=RunCaseResponse)

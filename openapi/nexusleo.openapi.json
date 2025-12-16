@@ -589,6 +589,38 @@
         "title": "CaseTimelineItem",
         "type": "object"
       },
+      "ChecklistItem": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "INFO",
+              "WARN"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "severity",
+          "rationale"
+        ],
+        "title": "ChecklistItem",
+        "type": "object"
+      },
       "ClaimMini": {
         "properties": {
           "claim_id": {
@@ -894,6 +926,55 @@
         "title": "EvidenceOut",
         "type": "object"
       },
+      "GuidanceOut": {
+        "properties": {
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItem"
+            },
+            "title": "Checklist",
+            "type": "array"
+          },
+          "doctrine_version": {
+            "title": "Doctrine Version",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "report_outline": {
+            "items": {
+              "$ref": "#/components/schemas/OutlineItem"
+            },
+            "title": "Report Outline",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "doctrine_version",
+          "generated_at",
+          "checklist",
+          "report_outline",
+          "notes"
+        ],
+        "title": "GuidanceOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1062,6 +1143,32 @@
           "end"
         ],
         "title": "MentionOut",
+        "type": "object"
+      },
+      "OutlineItem": {
+        "properties": {
+          "prompts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Prompts",
+            "type": "array"
+          },
+          "section_id": {
+            "title": "Section Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "section_id",
+          "title",
+          "prompts"
+        ],
+        "title": "OutlineItem",
         "type": "object"
       },
       "RunCaseRequest": {
@@ -1713,6 +1820,49 @@
           }
         },
         "summary": "Export Case",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}/guidance": {
+      "get": {
+        "operationId": "case_guidance_cases__case_id__guidance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuidanceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Guidance",
         "tags": [
           "cases"
         ]
