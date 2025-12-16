@@ -15,6 +15,7 @@ class ActivityLogEntry(Base):
     __table_args__ = (
         Index("ix_activity_log_entry_shift_id", "shift_id"),
         Index("ix_activity_log_entry_case_id", "case_id"),
+        Index("ix_activity_log_entry_source_document_id", "source_document_id"),
         Index("ix_activity_log_entry_occurred_at", "occurred_at"),
         Index("ix_activity_log_entry_created_at", "created_at"),
     )
@@ -22,6 +23,7 @@ class ActivityLogEntry(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     shift_id = Column(UUID(as_uuid=True), ForeignKey("shift_sessions.id", ondelete="CASCADE"), nullable=False)
     case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="SET NULL"), nullable=True)
+    source_document_id = Column(UUID(as_uuid=True), ForeignKey("source_documents.id", ondelete="SET NULL"), nullable=True)
     occurred_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     entry_type = Column(String, nullable=False)
     text = Column(Text, nullable=False)

@@ -20,8 +20,10 @@ class ActivityLogOut(BaseModel):
     id: UUID
     shift_id: UUID
     case_id: Optional[UUID] = None
+    source_document_id: Optional[UUID] = None
     occurred_at: datetime
     entry_type: str
     text: str
     metadata_json: dict[str, Any]
     created_at: datetime
+    timeline_item_type: str = "ACTIVITY_LOGGED"

@@ -11,6 +11,7 @@ from .demo import DemoSeedOut
 from .user import UserCreate, UserOut
 from .shift import ShiftStartRequest, ShiftStartResponse, ShiftEndResponse
 from .activity import ActivityLogCreate, ActivityLogOut
+from .shift_note import ShiftLogNoteCreate, ShiftLogNoteOut
 
 __all__ = [
     "CaseCreate",
@@ -35,4 +36,6 @@ __all__ = [
     "ShiftEndResponse",
     "ActivityLogCreate",
     "ActivityLogOut",
+    "ShiftLogNoteCreate",
+    "ShiftLogNoteOut",
 ]
