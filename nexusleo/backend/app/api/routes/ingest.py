@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.errors import ErrorToken
 from app.models import SourceDocument
 from app.schemas import IngestRequest, IngestResult
 from app.services.ingest import ingest_document
@@ -18,7 +19,7 @@ router = APIRouter()
 def ingest(case_id: UUID, payload: IngestRequest, db: Session = Depends(get_db)) -> IngestResult:
     document = db.get(SourceDocument, payload.document_id)
     if document is None or document.case_id != case_id:
-        raise HTTPException(status_code=404, detail="document_not_found")
+        raise HTTPException(status_code=404, detail=ErrorToken.DOCUMENT_NOT_FOUND.value)
 
     return ingest_document(
         db=db,

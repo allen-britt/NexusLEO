@@ -18,7 +18,7 @@ class AuditEvent(Base):
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
+    case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="CASCADE"), nullable=True)
     actor = Column(String, nullable=False, server_default="system")
     action = Column(String, nullable=False)
     tool = Column(String, nullable=False)

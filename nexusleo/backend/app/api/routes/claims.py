@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -15,13 +15,28 @@ router = APIRouter()
 
 
 @router.get("/cases/{case_id}/claims", response_model=List[ClaimOut])
-def list_claims(case_id: UUID, db: Session = Depends(get_db)) -> List[ClaimOut]:
-    audit_ids = [row[0] for row in db.query(AuditEvent.id).filter(AuditEvent.case_id == case_id).all()]
+def list_claims(
+    case_id: UUID,
+    limit: int = Query(100, ge=0),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+) -> List[ClaimOut]:
+    audit_ids = [
+        row[0]
+        for row in (
+            db.query(AuditEvent.id)
+            .filter(AuditEvent.case_id == case_id)
+            .order_by(AuditEvent.created_at.asc(), AuditEvent.id.asc())
+            .all()
+        )
+    ]
 
     claims = (
         db.query(Claim)
         .filter(Claim.case_id == case_id)
-        .order_by(Claim.created_at.asc())
+        .order_by(Claim.created_at.asc(), Claim.id.asc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
 
@@ -45,6 +60,7 @@ def list_claims(case_id: UUID, db: Session = Depends(get_db)) -> List[ClaimOut]:
             db.query(EvidenceLink, Mention)
             .join(Mention, EvidenceLink.mention_id == Mention.id)
             .filter(EvidenceLink.claim_id == claim.id)
+            .order_by(Mention.id.asc(), EvidenceLink.id.asc())
             .all()
         )
 

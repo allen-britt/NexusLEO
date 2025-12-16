@@ -5,9 +5,11 @@ import os
 from typing import Iterator
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.db import get_db
 from app.main import app
@@ -20,8 +22,24 @@ engine = create_engine(DATABASE_URL)
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _apply_migrations() -> None:
+    """Apply alembic migrations to the test database.
+
+    Tests assume schema exists. We run migrations once per test session.
+    """
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    alembic_ini = os.path.join(repo_root, "alembic.ini")
+    script_location = os.path.join(repo_root, "alembic")
+
+    cfg = Config(alembic_ini)
+    cfg.set_main_option("script_location", script_location)
+    cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+    command.upgrade(cfg, "head")
+
+
 @pytest.fixture
-def db_session() -> Iterator[Session]:
+def db_session(_apply_migrations) -> Iterator[Session]:
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
