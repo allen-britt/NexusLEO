@@ -9,9 +9,16 @@ from uuid import UUID
 
 from app.core.db import get_db
 from app.errors import ErrorToken
-from app.models import ActivityLogEntry, AuditEvent, Case, Claim, ConfidenceAssessment, EvidenceLink, Mention, SourceDocument
+from app.models import ActivityLogEntry, AuditEvent, Case, Claim, ConfidenceAssessment, EvidenceLink, Mention, ShiftSession, SourceDocument
 from app.schemas import CaseCreate, CaseOut, ClaimOut, ConfidenceOut, EvidenceOut, MentionOut
 from app.schemas.attach_activity import AttachActivityRequest, AttachActivityResponse
+from app.schemas.case_timeline import (
+    ActivityMini,
+    AuditMini,
+    CaseTimelineItem,
+    ClaimMini,
+    DocumentMini,
+)
 from app.schemas.bundles import (
     CaseExportAuditEvent,
     CaseExportBundle,
@@ -222,6 +229,124 @@ def attach_activity(
         claims=claims,
         audit_event_id=audit.id,
     )
+
+
+@router.get("/cases/{case_id}/timeline", response_model=list[CaseTimelineItem])
+def case_timeline(
+    case_id: UUID,
+    limit: int = Query(100, ge=0, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[CaseTimelineItem]:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    docs = (
+        db.query(SourceDocument)
+        .filter(SourceDocument.case_id == case_id)
+        .order_by(SourceDocument.created_at.asc(), SourceDocument.id.asc())
+        .all()
+    )
+    audits = (
+        db.query(AuditEvent)
+        .filter(AuditEvent.case_id == case_id)
+        .order_by(AuditEvent.created_at.asc(), AuditEvent.id.asc())
+        .all()
+    )
+    claims = (
+        db.query(Claim)
+        .filter(Claim.case_id == case_id)
+        .order_by(Claim.created_at.asc(), Claim.id.asc())
+        .all()
+    )
+    activities = (
+        db.query(ActivityLogEntry)
+        .filter(ActivityLogEntry.case_id == case_id)
+        .order_by(ActivityLogEntry.created_at.asc(), ActivityLogEntry.id.asc())
+        .all()
+    )
+
+    items: list[tuple] = []
+
+    for d in docs:
+        items.append(
+            (
+                d.created_at,
+                "DOCUMENT_ADDED",
+                str(d.id),
+                CaseTimelineItem(
+                    ts=d.created_at,
+                    item_type="DOCUMENT_ADDED",
+                    document=DocumentMini(document_id=d.id, document_type=d.type, sha256=d.sha256),
+                ),
+            )
+        )
+
+    for a in audits:
+        items.append(
+            (
+                a.created_at,
+                "AUDIT_EVENT",
+                str(a.id),
+                CaseTimelineItem(
+                    ts=a.created_at,
+                    item_type="AUDIT_EVENT",
+                    audit=AuditMini(
+                        audit_event_id=a.id,
+                        action=a.action,
+                        actor=a.actor,
+                        tool=a.tool,
+                        tool_version=a.tool_version,
+                    ),
+                ),
+            )
+        )
+
+    for c in claims:
+        confidence = db.query(ConfidenceAssessment).filter(ConfidenceAssessment.claim_id == c.id).one_or_none()
+        level = None
+        if confidence is not None:
+            level = str(confidence.level.value if hasattr(confidence.level, "value") else confidence.level)
+        items.append(
+            (
+                c.created_at,
+                "CLAIM_CREATED",
+                str(c.id),
+                CaseTimelineItem(
+                    ts=c.created_at,
+                    item_type="CLAIM_CREATED",
+                    claim=ClaimMini(claim_id=c.id, predicate=c.predicate, text=c.text, confidence_level=level),
+                ),
+            )
+        )
+
+    for act in activities:
+        shift = db.get(ShiftSession, act.shift_id)
+        officer_user_id = shift.user_id if shift is not None else None
+        items.append(
+            (
+                act.created_at,
+                "ACTIVITY_ATTACHED",
+                str(act.id),
+                CaseTimelineItem(
+                    ts=act.created_at,
+                    item_type="ACTIVITY_ATTACHED",
+                    activity=ActivityMini(
+                        activity_id=act.id,
+                        shift_id=act.shift_id,
+                        officer_user_id=officer_user_id,
+                        entry_type=act.entry_type,
+                        text=act.text,
+                        source_document_id=act.source_document_id,
+                    ),
+                ),
+            )
+        )
+
+    items.sort(key=lambda row: (row[0], row[1], row[2]))
+    sliced = items[offset : offset + limit]
+    return [row[3] for row in sliced]
 
 
 @router.post("/cases/{case_id}/run", response_model=RunCaseResponse)

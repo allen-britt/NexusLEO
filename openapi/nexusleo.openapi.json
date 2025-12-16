@@ -125,6 +125,60 @@
         "title": "ActivityLogOut",
         "type": "object"
       },
+      "ActivityMini": {
+        "properties": {
+          "activity_id": {
+            "format": "uuid",
+            "title": "Activity Id",
+            "type": "string"
+          },
+          "entry_type": {
+            "title": "Entry Type",
+            "type": "string"
+          },
+          "officer_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Officer User Id"
+          },
+          "shift_id": {
+            "format": "uuid",
+            "title": "Shift Id",
+            "type": "string"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "activity_id",
+          "shift_id",
+          "entry_type",
+          "text"
+        ],
+        "title": "ActivityMini",
+        "type": "object"
+      },
       "AttachActivityRequest": {
         "properties": {
           "activity_log_entry_id": {
@@ -219,6 +273,40 @@
           "audit_event_id"
         ],
         "title": "AttachActivityResponse",
+        "type": "object"
+      },
+      "AuditMini": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "audit_event_id": {
+            "format": "uuid",
+            "title": "Audit Event Id",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "tool_version": {
+            "title": "Tool Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audit_event_id",
+          "action",
+          "actor",
+          "tool",
+          "tool_version"
+        ],
+        "title": "AuditMini",
         "type": "object"
       },
       "CaseCreate": {
@@ -436,6 +524,106 @@
         "title": "CaseOut",
         "type": "object"
       },
+      "CaseTimelineItem": {
+        "properties": {
+          "activity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActivityMini"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditMini"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claim": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClaimMini"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentMini"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "item_type": {
+            "enum": [
+              "DOCUMENT_ADDED",
+              "AUDIT_EVENT",
+              "CLAIM_CREATED",
+              "ACTIVITY_ATTACHED"
+            ],
+            "title": "Item Type",
+            "type": "string"
+          },
+          "ts": {
+            "format": "date-time",
+            "title": "Ts",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ts",
+          "item_type"
+        ],
+        "title": "CaseTimelineItem",
+        "type": "object"
+      },
+      "ClaimMini": {
+        "properties": {
+          "claim_id": {
+            "format": "uuid",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "confidence_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Level"
+          },
+          "predicate": {
+            "title": "Predicate",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "predicate",
+          "text"
+        ],
+        "title": "ClaimMini",
+        "type": "object"
+      },
       "ClaimOut": {
         "properties": {
           "audit_event_ids": {
@@ -598,6 +786,30 @@
           "text"
         ],
         "title": "DocumentCreate",
+        "type": "object"
+      },
+      "DocumentMini": {
+        "properties": {
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_type": {
+            "title": "Document Type",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "document_type",
+          "sha256"
+        ],
+        "title": "DocumentMini",
         "type": "object"
       },
       "DocumentOut": {
@@ -1615,6 +1827,76 @@
           }
         },
         "summary": "Run Case",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}/timeline": {
+      "get": {
+        "operationId": "case_timeline_cases__case_id__timeline_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 0,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseTimelineItem"
+                  },
+                  "title": "Response Case Timeline Cases  Case Id  Timeline Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Timeline",
         "tags": [
           "cases"
         ]
