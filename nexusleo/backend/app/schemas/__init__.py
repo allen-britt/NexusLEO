@@ -12,6 +12,7 @@ from .user import UserCreate, UserOut
 from .shift import ShiftStartRequest, ShiftStartResponse, ShiftEndResponse
 from .activity import ActivityLogCreate, ActivityLogOut
 from .shift_note import ShiftLogNoteCreate, ShiftLogNoteOut
+from .attach_activity import AttachActivityRequest, AttachActivityResponse
 
 __all__ = [
     "CaseCreate",
@@ -38,4 +39,6 @@ __all__ = [
     "ActivityLogOut",
     "ShiftLogNoteCreate",
     "ShiftLogNoteOut",
+    "AttachActivityRequest",
+    "AttachActivityResponse",
 ]
