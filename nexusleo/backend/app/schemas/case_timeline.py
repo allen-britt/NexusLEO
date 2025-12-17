@@ -38,11 +38,20 @@ class ActivityMini(BaseModel):
     source_document_id: Optional[UUID] = None
 
 
+class ArtifactMini(BaseModel):
+    artifact_id: UUID
+    kind: str
+    label: str
+    sha256: Optional[str] = None
+    captured_at: Optional[datetime] = None
+
+
 class CaseTimelineItem(BaseModel):
     ts: datetime
-    item_type: Literal["DOCUMENT_ADDED", "AUDIT_EVENT", "CLAIM_CREATED", "ACTIVITY_ATTACHED"]
+    item_type: Literal["DOCUMENT_ADDED", "AUDIT_EVENT", "CLAIM_CREATED", "ACTIVITY_ATTACHED", "ARTIFACT_ADDED"]
 
     document: Optional[DocumentMini] = None
     audit: Optional[AuditMini] = None
     claim: Optional[ClaimMini] = None
     activity: Optional[ActivityMini] = None
+    artifact: Optional[ArtifactMini] = None

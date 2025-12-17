@@ -12,6 +12,7 @@ from .resolution_hypothesis import ResolutionHypothesis, ResolutionStatus
 from .user import User
 from .shift_session import ShiftSession
 from .activity_log_entry import ActivityLogEntry
+from .evidence_artifact import EvidenceArtifact
 
 __all__ = [
     "Case",
@@ -28,4 +29,5 @@ __all__ = [
     "User",
     "ShiftSession",
     "ActivityLogEntry",
+    "EvidenceArtifact",
 ]

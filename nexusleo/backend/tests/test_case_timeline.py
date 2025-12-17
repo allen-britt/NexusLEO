@@ -12,6 +12,8 @@ def _stable_id(item: dict) -> str:
         return item["claim"]["claim_id"]
     if t == "ACTIVITY_ATTACHED":
         return item["activity"]["activity_id"]
+    if t == "ARTIFACT_ADDED":
+        return item["artifact"]["artifact_id"]
     raise AssertionError(f"unknown item_type {t}")
 
 

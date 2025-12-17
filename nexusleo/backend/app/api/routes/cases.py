@@ -9,11 +9,24 @@ from uuid import UUID
 
 from app.core.db import get_db
 from app.errors import ErrorToken
-from app.models import ActivityLogEntry, AuditEvent, Case, Claim, ConfidenceAssessment, EvidenceLink, Mention, ShiftSession, SourceDocument
+from app.models import (
+    ActivityLogEntry,
+    AuditEvent,
+    Case,
+    Claim,
+    ConfidenceAssessment,
+    EvidenceArtifact,
+    EvidenceLink,
+    Mention,
+    ShiftSession,
+    SourceDocument,
+)
 from app.schemas import CaseCreate, CaseOut, ClaimOut, ConfidenceOut, EvidenceOut, MentionOut
+from app.schemas.artifact import ArtifactCreateIn, ArtifactOut
 from app.schemas.attach_activity import AttachActivityRequest, AttachActivityResponse
 from app.schemas.case_timeline import (
     ActivityMini,
+    ArtifactMini,
     AuditMini,
     CaseTimelineItem,
     ClaimMini,
@@ -28,13 +41,23 @@ from app.schemas.bundles import (
     RunCaseResponse,
 )
 from app.schemas.guidance import CaseGuidanceResponse
+from app.schemas.profile import SetCaseProfileRequest
+from app.schemas.report_draft import ReportDraftOut
+from app.policy.profiles import get_profile
 from app.services.guidance import build_case_guidance
 from app.services.ingest import ingest_document
+from app.services.report_draft import build_report_draft
 
 router = APIRouter()
 
 _TOOL = "nexusleo.case"
 _TOOL_VERSION = "0.2.0"
+
+_PROFILE_TOOL = "nexusleo.profile"
+_PROFILE_TOOL_VERSION = "0.1.0"
+
+_INGEST_TOOL = "nexusleo.ingest"
+_INGEST_TOOL_VERSION = "0.1.0"
 
 
 def _build_claims_out(db: Session, *, case_id: UUID) -> list[ClaimOut]:
@@ -142,7 +165,6 @@ def attach_activity(
     case = db.query(Case).filter(Case.id == case_id).first()
     if case is None:
         raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
-
     activity = db.get(ActivityLogEntry, payload.activity_log_entry_id)
     if activity is None:
         raise HTTPException(status_code=404, detail=ErrorToken.ACTIVITY_NOT_FOUND.value)
@@ -233,6 +255,68 @@ def attach_activity(
     )
 
 
+@router.post("/cases/{case_id}/artifacts", response_model=ArtifactOut)
+def create_case_artifact(
+    case_id: UUID,
+    payload: ArtifactCreateIn = Body(...),
+    db: Session = Depends(get_db),
+) -> ArtifactOut:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    actor = payload.actor or "system"
+
+    artifact = EvidenceArtifact(
+        case_id=case_id,
+        kind=payload.kind,
+        label=payload.label,
+        uri=payload.uri,
+        sha256=payload.sha256,
+        captured_at=payload.captured_at,
+        metadata_json=payload.metadata,
+    )
+    db.add(artifact)
+    db.flush()
+
+    audit = AuditEvent(
+        case_id=case_id,
+        actor=actor,
+        action="artifact_added",
+        tool=_INGEST_TOOL,
+        tool_version=_INGEST_TOOL_VERSION,
+        input_refs_json={"case_id": str(case_id)},
+        output_refs_json={"artifact_id": str(artifact.id)},
+    )
+    db.add(audit)
+
+    db.commit()
+    db.refresh(artifact)
+    return ArtifactOut.model_validate(artifact)
+
+
+@router.get("/cases/{case_id}/artifacts", response_model=list[ArtifactOut])
+def list_case_artifacts(
+    case_id: UUID,
+    limit: int = Query(100, ge=0),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[ArtifactOut]:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    artifacts = (
+        db.query(EvidenceArtifact)
+        .filter(EvidenceArtifact.case_id == case_id)
+        .order_by(EvidenceArtifact.created_at.asc(), EvidenceArtifact.id.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return [ArtifactOut.model_validate(a) for a in artifacts]
+
+
 @router.get("/cases/{case_id}/timeline", response_model=list[CaseTimelineItem])
 def case_timeline(
     case_id: UUID,
@@ -266,6 +350,13 @@ def case_timeline(
         db.query(ActivityLogEntry)
         .filter(ActivityLogEntry.case_id == case_id)
         .order_by(ActivityLogEntry.created_at.asc(), ActivityLogEntry.id.asc())
+        .all()
+    )
+
+    artifacts = (
+        db.query(EvidenceArtifact)
+        .filter(EvidenceArtifact.case_id == case_id)
+        .order_by(EvidenceArtifact.created_at.asc(), EvidenceArtifact.id.asc())
         .all()
     )
 
@@ -346,6 +437,27 @@ def case_timeline(
             )
         )
 
+    for art in artifacts:
+        ts = art.captured_at or art.created_at
+        items.append(
+            (
+                ts,
+                "ARTIFACT_ADDED",
+                str(art.id),
+                CaseTimelineItem(
+                    ts=ts,
+                    item_type="ARTIFACT_ADDED",
+                    artifact=ArtifactMini(
+                        artifact_id=art.id,
+                        kind=art.kind,
+                        label=art.label,
+                        sha256=art.sha256,
+                        captured_at=art.captured_at,
+                    ),
+                ),
+            )
+        )
+
     items.sort(key=lambda row: (row[0], row[1], row[2]))
     sliced = items[offset : offset + limit]
     return [row[3] for row in sliced]
@@ -360,6 +472,50 @@ def case_guidance(
         return build_case_guidance(db=db, case_id=case_id)
     except LookupError:
         raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+
+@router.get("/cases/{case_id}/report_draft", response_model=ReportDraftOut)
+def case_report_draft(
+    case_id: UUID,
+    db: Session = Depends(get_db),
+) -> ReportDraftOut:
+    try:
+        return build_report_draft(db=db, case_id=case_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+
+@router.post("/cases/{case_id}/profile", response_model=CaseOut)
+def set_case_profile(
+    case_id: UUID,
+    payload: SetCaseProfileRequest = Body(...),
+    db: Session = Depends(get_db),
+) -> CaseOut:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    prof = get_profile(payload.profile_id)
+    if prof is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.PROFILE_NOT_FOUND.value)
+
+    actor = payload.actor or "system"
+    case.profile_id = prof.profile_id
+    db.flush()
+
+    audit = AuditEvent(
+        case_id=case_id,
+        actor=actor,
+        action="case_profile_set",
+        tool=_PROFILE_TOOL,
+        tool_version=_PROFILE_TOOL_VERSION,
+        input_refs_json={"case_id": str(case_id), "profile_id": prof.profile_id},
+        output_refs_json={"profile_id": prof.profile_id},
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(case)
+    return CaseOut.model_validate(case)
 
 
 @router.post("/cases/{case_id}/run", response_model=RunCaseResponse)

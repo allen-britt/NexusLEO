@@ -15,6 +15,9 @@ from .shift_note import ShiftLogNoteCreate, ShiftLogNoteOut
 from .attach_activity import AttachActivityRequest, AttachActivityResponse
 from .case_timeline import CaseTimelineItem
 from .guidance import CaseGuidanceResponse, GuidanceItem
+from .artifact import ArtifactCreateIn, ArtifactOut
+from .profile import ProfileOut, SetCaseProfileRequest
+from .report_draft import ReportDraftOut, ReportSectionOut, SourceRefOut
 
 __all__ = [
     "CaseCreate",
@@ -46,4 +49,11 @@ __all__ = [
     "CaseTimelineItem",
     "GuidanceItem",
     "CaseGuidanceResponse",
+    "ArtifactCreateIn",
+    "ArtifactOut",
+    "ProfileOut",
+    "SetCaseProfileRequest",
+    "SourceRefOut",
+    "ReportSectionOut",
+    "ReportDraftOut",
 ]
