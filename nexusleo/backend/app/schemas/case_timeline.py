@@ -46,12 +46,27 @@ class ArtifactMini(BaseModel):
     captured_at: Optional[datetime] = None
 
 
+class CodeSelectionMini(BaseModel):
+    selection_id: UUID
+    catalog_type: str
+    code: str
+    label: str
+
+
 class CaseTimelineItem(BaseModel):
     ts: datetime
-    item_type: Literal["DOCUMENT_ADDED", "AUDIT_EVENT", "CLAIM_CREATED", "ACTIVITY_ATTACHED", "ARTIFACT_ADDED"]
+    item_type: Literal[
+        "DOCUMENT_ADDED",
+        "AUDIT_EVENT",
+        "CLAIM_CREATED",
+        "ACTIVITY_ATTACHED",
+        "ARTIFACT_ADDED",
+        "CODE_SELECTED",
+    ]
 
     document: Optional[DocumentMini] = None
     audit: Optional[AuditMini] = None
     claim: Optional[ClaimMini] = None
     activity: Optional[ActivityMini] = None
     artifact: Optional[ArtifactMini] = None
+    code_selection: Optional[CodeSelectionMini] = None

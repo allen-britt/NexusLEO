@@ -1,6 +1,6 @@
 """Pydantic schema exports."""
 
-from .case import CaseCreate, CaseOut
+from .case import CaseCreate, CaseOut, CaseStateContextIn, ObservedFactsIn
 from .document import DocumentCreate, DocumentOut
 from .mention import MentionOut
 from .claim import ClaimOut, ConfidenceOut, EvidenceOut
@@ -18,10 +18,21 @@ from .guidance import CaseGuidanceResponse, GuidanceItem
 from .artifact import ArtifactCreateIn, ArtifactOut
 from .profile import ProfileOut, SetCaseProfileRequest
 from .report_draft import ReportDraftOut, ReportSectionOut, SourceRefOut
+from .codes import (
+    CatalogSearchResponse,
+    CaseCodeSelectionCreate,
+    CaseCodeSelectionOut,
+    CaseCodeSelectionResponse,
+    CaseCodeSelectionListResponse,
+    CodeSuggestionOut,
+    CodeSuggestionResponse,
+)
 
 __all__ = [
     "CaseCreate",
     "CaseOut",
+    "CaseStateContextIn",
+    "ObservedFactsIn",
     "DocumentCreate",
     "DocumentOut",
     "MentionOut",
@@ -56,4 +67,11 @@ __all__ = [
     "SourceRefOut",
     "ReportSectionOut",
     "ReportDraftOut",
+    "CatalogSearchResponse",
+    "CaseCodeSelectionCreate",
+    "CaseCodeSelectionOut",
+    "CaseCodeSelectionResponse",
+    "CaseCodeSelectionListResponse",
+    "CodeSuggestionOut",
+    "CodeSuggestionResponse",
 ]

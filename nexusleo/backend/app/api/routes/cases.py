@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 
 from app.core.db import get_db
@@ -14,6 +14,7 @@ from app.models import (
     AuditEvent,
     Case,
     Claim,
+    CaseCodeSelection,
     ConfidenceAssessment,
     EvidenceArtifact,
     EvidenceLink,
@@ -21,7 +22,16 @@ from app.models import (
     ShiftSession,
     SourceDocument,
 )
-from app.schemas import CaseCreate, CaseOut, ClaimOut, ConfidenceOut, EvidenceOut, MentionOut
+from app.schemas import (
+    CaseCreate,
+    CaseOut,
+    ClaimOut,
+    ConfidenceOut,
+    EvidenceOut,
+    MentionOut,
+    CaseStateContextIn,
+    ObservedFactsIn,
+)
 from app.schemas.artifact import ArtifactCreateIn, ArtifactOut
 from app.schemas.attach_activity import AttachActivityRequest, AttachActivityResponse
 from app.schemas.case_timeline import (
@@ -31,6 +41,7 @@ from app.schemas.case_timeline import (
     CaseTimelineItem,
     ClaimMini,
     DocumentMini,
+    CodeSelectionMini,
 )
 from app.schemas.bundles import (
     CaseExportAuditEvent,
@@ -136,6 +147,36 @@ def _build_claims_out(db: Session, *, case_id: UUID) -> list[ClaimOut]:
         )
 
     return out
+
+
+@router.post("/cases/{case_id}/state_context")
+def set_case_state_context(
+    case_id: UUID,
+    payload: CaseStateContextIn = Body(...),
+    db: Session = Depends(get_db),
+) -> dict:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    case.state_context_json = payload.state_context
+    db.commit()
+    return {"case_id": str(case_id), "state_context": case.state_context_json}
+
+
+@router.post("/cases/{case_id}/observed_facts")
+def set_case_observed_facts(
+    case_id: UUID,
+    payload: ObservedFactsIn = Body(...),
+    db: Session = Depends(get_db),
+) -> dict:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    case.observed_facts_json = payload.observed_facts
+    db.commit()
+    return {"case_id": str(case_id), "observed_facts": case.observed_facts_json}
 
 
 @router.post("/cases", response_model=CaseOut)
@@ -360,6 +401,20 @@ def case_timeline(
         .all()
     )
 
+    selections = (
+        db.query(CaseCodeSelection)
+        .options(joinedload(CaseCodeSelection.code_catalog), joinedload(CaseCodeSelection.call_type_catalog))
+        .filter(CaseCodeSelection.case_id == case_id)
+        .order_by(
+            CaseCodeSelection.selected_at.asc(),
+            CaseCodeSelection.catalog_type.asc(),
+            CaseCodeSelection.code_catalog_id.asc().nullsfirst(),
+            CaseCodeSelection.call_type_catalog_id.asc().nullsfirst(),
+            CaseCodeSelection.id.asc(),
+        )
+        .all()
+    )
+
     items: list[tuple] = []
 
     for d in docs:
@@ -391,6 +446,29 @@ def case_timeline(
                         actor=a.actor,
                         tool=a.tool,
                         tool_version=a.tool_version,
+                    ),
+                ),
+            )
+        )
+
+    for sel in selections:
+        code = sel.code_catalog
+        call_type = sel.call_type_catalog
+        label = code.label if code is not None else call_type.label if call_type is not None else ""
+        code_value = code.code if code is not None else call_type.code if call_type is not None else ""
+        items.append(
+            (
+                sel.selected_at,
+                "CODE_SELECTED",
+                str(sel.id),
+                CaseTimelineItem(
+                    ts=sel.selected_at,
+                    item_type="CODE_SELECTED",
+                    code_selection=CodeSelectionMini(
+                        selection_id=sel.id,
+                        catalog_type=sel.catalog_type,
+                        code=code_value,
+                        label=label,
                     ),
                 ),
             )

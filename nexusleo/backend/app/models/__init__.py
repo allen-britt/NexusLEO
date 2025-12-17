@@ -1,6 +1,9 @@
 """SQLAlchemy models package."""
 
 from .case import Case
+from .case_code_selection import CaseCodeSelection
+from .code_catalog import CodeCatalog
+from .call_type_catalog import CallTypeCatalog
 from .source_document import SourceDocument
 from .mention import Mention
 from .entity import Entity
@@ -24,6 +27,9 @@ __all__ = [
     "ConfidenceAssessment",
     "ConfidenceLevel",
     "AuditEvent",
+    "CodeCatalog",
+    "CallTypeCatalog",
+    "CaseCodeSelection",
     "ResolutionHypothesis",
     "ResolutionStatus",
     "User",
