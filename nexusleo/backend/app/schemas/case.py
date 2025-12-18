@@ -17,6 +17,7 @@ class CaseOut(BaseModel):
 
     id: UUID
     name: Optional[str] = None
+    profile_id: Optional[str] = None
     created_at: datetime
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.routes import cases, documents, ingest, claims, meta, demo, users, shifts, codes
+from app.api.routes import cases, documents, ingest, claims, meta, demo, users, shifts, codes, profiles
 
 api_router = APIRouter()
 api_router.include_router(meta.router, tags=["meta"])
@@ -15,3 +15,4 @@ api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(ingest.router, tags=["ingest"])
 api_router.include_router(claims.router, tags=["claims"])
 api_router.include_router(codes.router, tags=["codes"])
+api_router.include_router(profiles.router, tags=["profiles"])

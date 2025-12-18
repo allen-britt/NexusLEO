@@ -27,6 +27,7 @@ from .codes import (
     CodeSuggestionOut,
     CodeSuggestionResponse,
 )
+from .offense import OffenseCandidateV0
 
 __all__ = [
     "CaseCreate",
@@ -74,4 +75,5 @@ __all__ = [
     "CaseCodeSelectionListResponse",
     "CodeSuggestionOut",
     "CodeSuggestionResponse",
+    "OffenseCandidateV0",
 ]

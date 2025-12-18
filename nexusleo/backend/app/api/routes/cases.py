@@ -31,6 +31,7 @@ from app.schemas import (
     MentionOut,
     CaseStateContextIn,
     ObservedFactsIn,
+    OffenseCandidateV0,
 )
 from app.schemas.artifact import ArtifactCreateIn, ArtifactOut
 from app.schemas.attach_activity import AttachActivityRequest, AttachActivityResponse
@@ -55,6 +56,7 @@ from app.schemas.guidance import CaseGuidanceResponse
 from app.schemas.profile import SetCaseProfileRequest
 from app.schemas.report_draft import ReportDraftOut
 from app.policy.profiles import get_profile
+from app.policy.registry import evaluate_offense_candidates
 from app.services.guidance import build_case_guidance
 from app.services.ingest import ingest_document
 from app.services.report_draft import build_report_draft
@@ -177,6 +179,29 @@ def set_case_observed_facts(
     case.observed_facts_json = payload.observed_facts
     db.commit()
     return {"case_id": str(case_id), "observed_facts": case.observed_facts_json}
+
+
+@router.get("/cases/{case_id}/offense-candidates", response_model=list[OffenseCandidateV0])
+def get_case_offense_candidates(
+    case_id: UUID,
+    db: Session = Depends(get_db),
+) -> list[OffenseCandidateV0]:
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if case is None:
+        raise HTTPException(status_code=404, detail=ErrorToken.CASE_NOT_FOUND.value)
+
+    ctx = case.state_context_json or {}
+    if not isinstance(ctx, dict) or not ctx.get("selected_state"):
+        raise HTTPException(status_code=400, detail=ErrorToken.CASE_STATE_NOT_SET.value)
+
+    facts = case.observed_facts_json
+    if not isinstance(facts, dict) or not facts:
+        raise HTTPException(status_code=400, detail=ErrorToken.CASE_FACTS_NOT_SET.value)
+
+    try:
+        return evaluate_offense_candidates(selected_state=str(ctx.get("selected_state")), state_context=ctx, facts=facts)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=ErrorToken.INVALID_REQUEST.value)
 
 
 @router.post("/cases", response_model=CaseOut)
